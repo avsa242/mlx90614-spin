@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2019
     Started Mar 17, 2019
-    Updated Mar 17, 2019
+    Updated Mar 18, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -44,6 +44,7 @@ CON
         BITS_PWM_PERIOD     = %1111111
 
     EE_TA_RANGE             = $03
+
     EE_EMISS_CORR           = $04
 
     EE_CONFIG               = $05
@@ -73,6 +74,7 @@ CON
         MASK_SENSOR_TST     = EE_CONFIG_MASK ^ (1 << FLD_SENSOR_TST)
 
     EE_MLX_SLAVEADDR        = $0E
+
     EE_ID_1                 = $1C
     EE_ID_2                 = $1D
     EE_ID_3                 = $1E

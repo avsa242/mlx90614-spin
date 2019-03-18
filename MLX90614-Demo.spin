@@ -5,7 +5,7 @@
     Description: Demo for the MLX90614 driver
     Copyright (c) 2019
     Started Mar 17, 2019
-    Updated Mar 17, 2019
+    Updated Mar 18, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -54,7 +54,7 @@ PUB ReadTa | tmp
 
     tmp := math.FFloat (mlx.AmbientTemp (mlx#C))
     tmp := math.FDiv (tmp, 100.0)
-    ser.Str (string("Ta: "))
+    ser.Str (string("Ambient: "))
     ser.Str (fs.FloatToString (tmp))
 
 PUB Setup

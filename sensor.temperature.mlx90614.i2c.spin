@@ -5,7 +5,7 @@
     Description: Driver for the Melexis MLX90614 IR thermometer
     Copyright (c) 2019
     Started Mar 17, 2019
-    Updated Mar 17, 2019
+    Updated Mar 18, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -70,11 +70,21 @@ PUB ID
 
 PUB ObjTemp(channel, scale) | tmp
 ' Reads the Object temperature (IR temp)
+'   channel
+'       Valid values: 1, 2 (CH2 availability is device-dependent)
+'          Any other value is ignored
+'   scale
+'      Valid values: K (0), C (1), or F (2)
+'          Any other value is ignored
+'   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
+
     case channel
         1:
             readRegX(core#CMD_RAM, core#T_OBJ1, 3, @result)
         2:
             readRegX(core#CMD_RAM, core#T_OBJ2, 3, @result)
+        OTHER:
+            return
 
     tmp := result.byte[PEC]
     result &= $FFFF
@@ -90,6 +100,9 @@ PUB ObjTemp(channel, scale) | tmp
 
 PUB AmbientTemp(scale) | tmp
 ' Reads the Ambient temperature
+'   Valid values: K (0), C (1), or F (2)
+'       Any other value is ignored
+'   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
     readRegX(core#CMD_RAM, core#T_A, 3, @result)
 
     tmp := result.byte[PEC]
@@ -105,7 +118,7 @@ PUB AmbientTemp(scale) | tmp
             return
 
 PRI readRegX(region, reg, nr_bytes, addr_buff) | cmd_packet
-'Read nr_bytes from register 'reg' to address 'addr_buff'
+' Reads bytes from device register in selected memory region
     cmd_packet.byte[0] := SLAVE_WR
 
     case region
@@ -125,7 +138,7 @@ PRI readRegX(region, reg, nr_bytes, addr_buff) | cmd_packet
     i2c.stop
 
 PRI writeRegX(region, reg, nr_bytes, val) | cmd_packet[2]
-' Write nr_bytes to register 'reg' stored in val
+' Writes bytes to device register in selected memory region
     cmd_packet.byte[0] := SLAVE_WR
 
     case region
