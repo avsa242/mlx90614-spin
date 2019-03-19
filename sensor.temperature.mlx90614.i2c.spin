@@ -5,7 +5,7 @@
     Description: Driver for the Melexis MLX90614 IR thermometer
     Copyright (c) 2019
     Started Mar 17, 2019
-    Updated Mar 18, 2019
+    Updated Mar 19, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -90,11 +90,12 @@ PUB ObjTemp(channel, scale) | tmp
     result &= $FFFF
 
     case scale
-        K:
-            result := result * 2              ' Result will be in centidegrees Kelvin
-        C:
-            result := (result * 2) - 27315    ' Result will be in centidegrees Celsius
-        F:
+        K:                                  ' Result will be in centidegrees Kelvin
+            result := result * 2
+        C:                                  ' Result will be in centidegrees Celsius
+            result := (result * 2) - 27315
+        F:                                  ' Result will be in centidegrees Fahrenheit
+            result := ((result * 2) - 27315) * 900/500 + 3200
         OTHER:
             return
 
@@ -109,16 +110,17 @@ PUB AmbientTemp(scale) | tmp
     result &= $FFFF
 
     case scale
-        K:
-            result := result * 2              ' Result will be in centidegrees Kelvin
-        C:
-            result := (result * 2) - 27315    ' Result will be in centidegrees Celsius
-        F:
+        K:                                  ' Result will be in centidegrees Kelvin
+            result := result * 2
+        C:                                  ' Result will be in centidegrees Celsius
+            result := (result * 2) - 27315
+        F:                                  ' Result will be in centidegrees Fahrenheit
+            result := ((result * 2) - 27315) * 900/500 + 3200
         OTHER:
             return
 
 PRI readRegX(region, reg, nr_bytes, addr_buff) | cmd_packet
-' Reads bytes from device register in selected memory region
+'Read nr_bytes from register 'reg' to address 'addr_buff'
     cmd_packet.byte[0] := SLAVE_WR
 
     case region
@@ -138,7 +140,7 @@ PRI readRegX(region, reg, nr_bytes, addr_buff) | cmd_packet
     i2c.stop
 
 PRI writeRegX(region, reg, nr_bytes, val) | cmd_packet[2]
-' Writes bytes to device register in selected memory region
+' Write nr_bytes to register 'reg' stored in val
     cmd_packet.byte[0] := SLAVE_WR
 
     case region
