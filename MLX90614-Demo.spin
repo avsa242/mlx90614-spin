@@ -5,7 +5,7 @@
     Description: Demo for the MLX90614 driver
     Copyright (c) 2019
     Started Mar 17, 2019
-    Updated Mar 17, 2019
+    Updated Mar 19, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -31,6 +31,7 @@ VAR
 PUB Main
 
     Setup
+    fs.SetPrecision (5)
 
     ser.Position (0, 3)
     ser.Str (string("Sensor ID: "))

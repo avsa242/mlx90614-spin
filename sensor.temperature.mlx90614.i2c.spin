@@ -5,7 +5,7 @@
     Description: Driver for the Melexis MLX90614 IR thermometer
     Copyright (c) 2019
     Started Mar 17, 2019
-    Updated Mar 17, 2019
+    Updated Mar 19, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -70,37 +70,52 @@ PUB ID
 
 PUB ObjTemp(channel, scale) | tmp
 ' Reads the Object temperature (IR temp)
+'   channel
+'       Valid values: 1, 2 (CH2 availability is device-dependent)
+'          Any other value is ignored
+'   scale
+'      Valid values: K (0), C (1), or F (2)
+'          Any other value is ignored
+'   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
+
     case channel
         1:
             readRegX(core#CMD_RAM, core#T_OBJ1, 3, @result)
         2:
             readRegX(core#CMD_RAM, core#T_OBJ2, 3, @result)
+        OTHER:
+            return
 
     tmp := result.byte[PEC]
     result &= $FFFF
 
     case scale
-        K:
-            result := result * 2              ' Result will be in centidegrees Kelvin
-        C:
-            result := (result * 2) - 27315    ' Result will be in centidegrees Celsius
-        F:
+        K:                                  ' Result will be in centidegrees Kelvin
+            result := result * 2
+        C:                                  ' Result will be in centidegrees Celsius
+            result := (result * 2) - 27315
+        F:                                  ' Result will be in centidegrees Fahrenheit
+            result := ((result * 2) - 27315) * 900/500 + 3200
         OTHER:
             return
 
 PUB AmbientTemp(scale) | tmp
 ' Reads the Ambient temperature
+'   Valid values: K (0), C (1), or F (2)
+'       Any other value is ignored
+'   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
     readRegX(core#CMD_RAM, core#T_A, 3, @result)
 
     tmp := result.byte[PEC]
     result &= $FFFF
 
     case scale
-        K:
-            result := result * 2              ' Result will be in centidegrees Kelvin
-        C:
-            result := (result * 2) - 27315    ' Result will be in centidegrees Celsius
-        F:
+        K:                                  ' Result will be in centidegrees Kelvin
+            result := result * 2
+        C:                                  ' Result will be in centidegrees Celsius
+            result := (result * 2) - 27315
+        F:                                  ' Result will be in centidegrees Fahrenheit
+            result := ((result * 2) - 27315) * 900/500 + 3200
         OTHER:
             return
 
