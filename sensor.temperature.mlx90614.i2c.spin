@@ -120,7 +120,8 @@ PUB AmbientTemp(scale) | tmp
             return
 
 PRI readRegX(region, reg, nr_bytes, addr_buff) | cmd_packet
-'Read nr_bytes from register 'reg' to address 'addr_buff'
+' Reads bytes from device register in selected memory region
+
     cmd_packet.byte[0] := SLAVE_WR
 
     case region
@@ -140,7 +141,7 @@ PRI readRegX(region, reg, nr_bytes, addr_buff) | cmd_packet
     i2c.stop
 
 PRI writeRegX(region, reg, nr_bytes, val) | cmd_packet[2]
-' Write nr_bytes to register 'reg' stored in val
+' Writes bytes to device register in selected memory region
     cmd_packet.byte[0] := SLAVE_WR
 
     case region
