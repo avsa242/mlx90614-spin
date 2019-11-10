@@ -1,7 +1,7 @@
 # mlx90614-spin 
 ---------------
 
-This is a P8X32A/Propeller driver object for the Melexis MLX90614 IR thermometer
+This is a P8X32A/Propeller 1, P2X8C4M64P/Propeller 2 driver object for the Melexis MLX90614 IR thermometer
 
 ## Salient Features
 
@@ -12,7 +12,12 @@ This is a P8X32A/Propeller driver object for the Melexis MLX90614 IR thermometer
 
 ## Requirements
 
-* Requires 1 extra core/cog for the PASM I2C driver
+* Requires 1 extra core/cog for the PASM I2C driver (spin1)
+* N/A (spin2)
+
+## Compiler compatibility
+
+* FastSpin (tested with 4.0.3-beta)
 
 ## Limitations
 
