@@ -3,9 +3,9 @@
     Filename: sensor.temperature.mlx90614.i2c.spin
     Author: Jesse Burt
     Description: Driver for the Melexis MLX90614 IR thermometer
-    Copyright (c) 2019
+    Copyright (c) 2020
     Started Mar 17, 2019
-    Updated Mar 19, 2019
+    Updated Mar 4, 2020
     See end of file for terms of use.
     --------------------------------------------
 }

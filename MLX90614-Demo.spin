@@ -3,74 +3,99 @@
     Filename: MLX90614-Demo.spin
     Author: Jesse Burt
     Description: Demo for the MLX90614 driver
-    Copyright (c) 2019
+    Copyright (c) 2020
     Started Mar 17, 2019
-    Updated Mar 19, 2019
+    Updated Mar 4, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
 
-    _clkmode = cfg#_clkmode
-    _xinfreq = cfg#_xinfreq
+    _clkmode    = cfg#_clkmode
+    _xinfreq    = cfg#_xinfreq
+
+    LED         = cfg#LED1
+    SER_RX      = 31
+    SER_TX      = 30
+    SER_BAUD    = 115_200
+
+    I2C_SCL     = 28
+    I2C_SDA     = 29
+    I2C_HZ      = 100_000
+
+    K           = 0
+    C           = 1
+    F           = 2
+
+    TEMP_SCALE  = C
 
 OBJ
 
     cfg     : "core.con.boardcfg.flip"
-    ser     : "com.serial.terminal"
+    ser     : "com.serial.terminal.ansi"
     time    : "time"
+    io      : "io"
     mlx     : "sensor.temperature.mlx90614.i2c"
-    math    : "tiny.math.float"
-    fs      : "string.float"
+    int     : "string.integer"
 
 VAR
 
     byte _ser_cog
 
-PUB Main
+PUB Main | Tobj, Tamb
 
     Setup
-    fs.SetPrecision (5)
-
-    ser.Position (0, 3)
-    ser.Str (string("Sensor ID: "))
-    ser.Hex (mlx.ID, 8)
 
     repeat
+        Tobj := mlx.ObjTemp (1, TEMP_SCALE)
+        Tamb := mlx.AmbientTemp (TEMP_SCALE)
+
         ser.Position (0, 5)
-        ReadIR(1)
-        ser.Position (0, 6)
-        ReadTa
+        ser.str(string("Tobj: "))
+        Decimal(Tobj, 100)
+        ser.Newline
+
+        ser.str(string("Ta: "))
+        Decimal(Tamb, 100)
+
         time.MSleep (100)
 
-PUB ReadIR(ch) | tmp
+PUB Decimal(scaled, divisor) | whole[4], part[4], places, tmp
+' Display a fixed-point scaled up number in decimal-dot notation - scale it back down by divisor
+'   e.g., Decimal (314159, 100000) would display 3.14159 on the termainl
+'   scaled: Fixed-point scaled up number
+'   divisor: Divide scaled-up number by this amount
+    whole := scaled / divisor
+    tmp := divisor
+    places := 0
 
-    tmp := math.FFloat (mlx.ObjTemp (ch, mlx#C))
-    tmp := math.FDiv (tmp, 100.0)
-    ser.Str (string("IR: "))
-    ser.Str (fs.FloatToString (tmp))
+    repeat
+        tmp /= 10
+        places++
+    until tmp == 1
+    part := int.DecZeroed(||(scaled // divisor), places)
 
-PUB ReadTa | tmp
-
-    tmp := math.FFloat (mlx.AmbientTemp (mlx#C))
-    tmp := math.FDiv (tmp, 100.0)
-    ser.Str (string("Ta: "))
-    ser.Str (fs.FloatToString (tmp))
+    ser.Dec (whole)
+    ser.Char (".")
+    ser.Str (part)
 
 PUB Setup
 
-    repeat until _ser_cog := ser.Start (115_200)
+    repeat until _ser_cog := ser.StartRXTX (SER_RX, SER_TX, 0, SER_BAUD)
+    time.Sleep(30)
     ser.Clear
-    ser.Str(string("Serial terminal started", ser#NL))
+    ser.Str(string("Serial terminal started", ser#CR, ser#LF))
     if mlx.Start
-        ser.Str (string("MLX90614 driver started", ser#NL))    
+        ser.Str (string("MLX90614 driver started", ser#CR, ser#LF))
     else
-        ser.Str (string("MLX90614 driver failed to start - halting", ser#NL))
+        ser.Str (string("MLX90614 driver failed to start - halting", ser#CR, ser#LF))
         mlx.Stop
-        time.MSleep (500)
+        time.MSleep (30)
         ser.Stop
-        repeat
+        FlashLED(LED, 500)
+
+#include "lib.utility.spin"
 
 DAT
 {
