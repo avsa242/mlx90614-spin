@@ -51,8 +51,9 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
             if okay := i2c.setupx (SCL_PIN, SDA_PIN, I2C_HZ)    'I2C Object Started?
                 time.MSleep (1)
                 if i2c.present (SLAVE_WR)                       'Response from device?
-                    time.MSleep (250)                           'First data available approx 250ms after POR
-                    return okay
+                    if DeviceID
+                        time.MSleep (250)                       'First data available approx 250ms after POR
+                        return okay
 
     return FALSE                                                'If we got here, something went wrong
 
@@ -82,13 +83,13 @@ PUB AmbientTemp(scale) | tmp
 
     return
 
+PUB DeviceID
+' Reads the sensor ID
+    readReg(core#CMD_EEPROM, core#EE_ID_1, 4, @result)
+
 PUB EEPROM(addr) | tmp
 ' Dump EEPROM to array at addr
     readReg(core#CMD_EEPROM, $00, 64, addr)
-
-PUB ID
-' Reads the sensor ID
-    readReg(core#CMD_EEPROM, core#EE_ID_1, 4, @result)
 
 PUB ObjTemp(channel, scale) | tmp
 ' Reads the Object temperature (IR temp)
