@@ -15,8 +15,6 @@ CON
     SLAVE_WR        = core#SLAVE_ADDR
     SLAVE_RD        = core#SLAVE_ADDR|1
 
-    DEF_SCL         = 28
-    DEF_SDA         = 29
     DEF_HZ          = 100_000
     I2C_MAX_FREQ    = core#I2C_MAX_FREQ
 
@@ -51,7 +49,6 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
             if okay := i2c.Setup (SCL_PIN, SDA_PIN, I2C_HZ)    'I2C Object Started?
                 time.MSleep (1)
                 if i2c.present (SLAVE_WR)                       'Response from device?
-
                     time.MSleep (250)                           'First data available approx 250ms after POR
                     return okay
 
@@ -68,6 +65,7 @@ PUB AmbientTemp(scale) | tmp
 
     tmp := result.byte[PEC]
     result &= $FFFF
+
     case scale
         K:                                  ' Result will be in centidegrees Kelvin
             result := result * 2
@@ -107,6 +105,7 @@ PUB ObjTemp(channel, scale) | tmp
 
     tmp := result.byte[PEC]
     result &= $FFFF
+
     case scale
         K:                                  ' Result will be in centidegrees Kelvin
             result := result * 2
@@ -115,7 +114,7 @@ PUB ObjTemp(channel, scale) | tmp
         F:                                  ' Result will be in centidegrees Fahrenheit
             result := ((result * 2) - 27315) * 900/500 + 3200
         OTHER:
-            return result
+            return
 
     return
 

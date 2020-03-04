@@ -60,13 +60,35 @@ PUB Stop
 
     i2c.terminate
 
+PUB AmbientTemp(scale) | tmp
+' Reads the Ambient temperature
+'   Valid values: K (0), C (1), or F (2)
+'       Any other value is ignored
+'   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
+    readReg(core#CMD_RAM, core#T_A, 3, @result)
+
+    tmp := result.byte[PEC]
+    result &= $FFFF
+
+    case scale
+        K:                                  ' Result will be in centidegrees Kelvin
+            result := result * 2
+        C:                                  ' Result will be in centidegrees Celsius
+            result := (result * 2) - 27315
+        F:                                  ' Result will be in centidegrees Fahrenheit
+            result := ((result * 2) - 27315) * 900/500 + 3200
+        OTHER:
+            return
+
+    return
+
 PUB EEPROM(addr) | tmp
 ' Dump EEPROM to array at addr
-    readRegX(core#CMD_EEPROM, $00, 64, addr)
+    readReg(core#CMD_EEPROM, $00, 64, addr)
 
 PUB ID
 ' Reads the sensor ID
-    readRegX(core#CMD_EEPROM, core#EE_ID_1, 4, @result)
+    readReg(core#CMD_EEPROM, core#EE_ID_1, 4, @result)
 
 PUB ObjTemp(channel, scale) | tmp
 ' Reads the Object temperature (IR temp)
@@ -77,12 +99,11 @@ PUB ObjTemp(channel, scale) | tmp
 '      Valid values: K (0), C (1), or F (2)
 '          Any other value is ignored
 '   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
-
     case channel
         1:
-            readRegX(core#CMD_RAM, core#T_OBJ1, 3, @result)
+            readReg(core#CMD_RAM, core#T_OBJ1, 3, @result)
         2:
-            readRegX(core#CMD_RAM, core#T_OBJ2, 3, @result)
+            readReg(core#CMD_RAM, core#T_OBJ2, 3, @result)
         OTHER:
             return
 
@@ -99,27 +120,7 @@ PUB ObjTemp(channel, scale) | tmp
         OTHER:
             return
 
-PUB AmbientTemp(scale) | tmp
-' Reads the Ambient temperature
-'   Valid values: K (0), C (1), or F (2)
-'       Any other value is ignored
-'   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
-    readRegX(core#CMD_RAM, core#T_A, 3, @result)
-
-    tmp := result.byte[PEC]
-    result &= $FFFF
-
-    case scale
-        K:                                  ' Result will be in centidegrees Kelvin
-            result := result * 2
-        C:                                  ' Result will be in centidegrees Celsius
-            result := (result * 2) - 27315
-        F:                                  ' Result will be in centidegrees Fahrenheit
-            result := ((result * 2) - 27315) * 900/500 + 3200
-        OTHER:
-            return
-
-PRI readRegX(region, reg, nr_bytes, addr_buff) | cmd_packet
+PRI readReg(region, reg, nr_bytes, addr_buff) | cmd_packet
 ' Reads bytes from device register in selected memory region
 
     cmd_packet.byte[0] := SLAVE_WR
@@ -140,7 +141,7 @@ PRI readRegX(region, reg, nr_bytes, addr_buff) | cmd_packet
     i2c.rd_block (addr_buff, nr_bytes, TRUE)
     i2c.stop
 
-PRI writeRegX(region, reg, nr_bytes, val) | cmd_packet[2]
+PRI writeReg(region, reg, nr_bytes, val) | cmd_packet[2]
 ' Writes bytes to device register in selected memory region
     cmd_packet.byte[0] := SLAVE_WR
 
