@@ -5,7 +5,7 @@
     Description: Driver for the Melexis MLX90614 IR thermometer
     Copyright (c) 2020
     Started Mar 17, 2019
-    Updated Mar 4, 2020
+    Updated Mar 5, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -24,6 +24,7 @@ CON
     LSB             = 1
     PEC             = 2
 
+' Temperature scales
     K               = 0
     C               = 1
     F               = 2
@@ -75,9 +76,9 @@ PUB AmbientTemp(scale) | tmp
         K:                                  ' Result will be in centidegrees Kelvin
             result := result * 2
         C:                                  ' Result will be in centidegrees Celsius
-            result := (result * 2) - 27315
+            result := (result * 2) - 273_15
         F:                                  ' Result will be in centidegrees Fahrenheit
-            result := ((result * 2) - 27315) * 900/500 + 3200
+            result := ((result * 2) - 273_15) * 9_00/5_00 + 32_00
         OTHER:
             return
 
@@ -115,9 +116,9 @@ PUB ObjTemp(channel, scale) | tmp
         K:                                  ' Result will be in centidegrees Kelvin
             result := result * 2
         C:                                  ' Result will be in centidegrees Celsius
-            result := (result * 2) - 27315
+            result := (result * 2) - 273_15
         F:                                  ' Result will be in centidegrees Fahrenheit
-            result := ((result * 2) - 27315) * 900/500 + 3200
+            result := ((result * 2) - 273_15) * 9_00/5_00 + 32_00
         OTHER:
             return
 
