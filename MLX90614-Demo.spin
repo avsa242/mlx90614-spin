@@ -5,7 +5,7 @@
     Description: Demo for the MLX90614 driver
     Copyright (c) 2020
     Started Mar 17, 2019
-    Updated Mar 4, 2020
+    Updated Mar 5, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -24,10 +24,11 @@ CON
     I2C_SDA     = 29
     I2C_HZ      = 100_000
 
-    K           = 0
-    C           = 1
-    F           = 2
+    C           = 0
+    F           = 1
+    K           = 2
 
+' Choose one of the temperature scales above
     TEMP_SCALE  = C
 
 OBJ
@@ -47,9 +48,11 @@ PUB Main | Tobj, Tamb
 
     Setup
 
+    mlx.Scale(TEMP_SCALE)
+
     repeat
-        Tobj := mlx.ObjTemp (1, TEMP_SCALE)
-        Tamb := mlx.AmbientTemp (TEMP_SCALE)
+        Tobj := mlx.ObjTemp (1)
+        Tamb := mlx.AmbientTemp
 
         ser.Position (0, 5)
         ser.str(string("Tobj: "))

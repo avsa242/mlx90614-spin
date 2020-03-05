@@ -25,12 +25,13 @@ CON
     PEC             = 2
 
 ' Temperature scales
-    K               = 0
-    C               = 1
-    F               = 2
+    C               = 0
+    F               = 1
+    K               = 2
 
 VAR
 
+    byte _temp_scale
 
 OBJ
 
@@ -62,23 +63,21 @@ PUB Stop
 
     i2c.terminate
 
-PUB AmbientTemp(scale) | tmp
+PUB AmbientTemp | tmp
 ' Reads the Ambient temperature
-'   Valid values: K (0), C (1), or F (2)
-'       Any other value is ignored
 '   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
     readReg(core#CMD_RAM, core#T_A, 3, @result)
 
     tmp := result.byte[PEC]
     result &= $FFFF
 
-    case scale
-        K:                                  ' Result will be in centidegrees Kelvin
-            result := result * 2
+    case _temp_scale
         C:                                  ' Result will be in centidegrees Celsius
             result := (result * 2) - 273_15
         F:                                  ' Result will be in centidegrees Fahrenheit
             result := ((result * 2) - 273_15) * 9_00/5_00 + 32_00
+        K:                                  ' Result will be in centidegrees Kelvin
+            result := result * 2
         OTHER:
             return
 
@@ -92,14 +91,11 @@ PUB EEPROM(addr) | tmp
 ' Dump EEPROM to array at addr
     readReg(core#CMD_EEPROM, $00, 64, addr)
 
-PUB ObjTemp(channel, scale) | tmp
+PUB ObjTemp(channel) | tmp
 ' Reads the Object temperature (IR temp)
 '   channel
 '       Valid values: 1, 2 (CH2 availability is device-dependent)
-'          Any other value is ignored
-'   scale
-'      Valid values: K (0), C (1), or F (2)
-'          Any other value is ignored
+'       Any other value is ignored
 '   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
     case channel
         1:
@@ -112,15 +108,31 @@ PUB ObjTemp(channel, scale) | tmp
     tmp := result.byte[PEC]
     result &= $FFFF
 
-    case scale
-        K:                                  ' Result will be in centidegrees Kelvin
-            result := result * 2
+    case _temp_scale
         C:                                  ' Result will be in centidegrees Celsius
             result := (result * 2) - 273_15
         F:                                  ' Result will be in centidegrees Fahrenheit
             result := ((result * 2) - 273_15) * 9_00/5_00 + 32_00
+        K:                                  ' Result will be in centidegrees Kelvin
+            result := result * 2
         OTHER:
             return
+
+    return
+
+PUB Scale(temp_scale)
+' Set scale of temperature data returned by AmbientTemp and ObjTemp methods
+'   Valid values:
+'      *C (0): Celsius
+'       F (1): Fahrenheit
+'       K (2): Kelvin
+'   Any other value returns the current setting
+    case temp_scale
+        C, F, K:
+            _temp_scale := temp_scale
+            return _temp_scale
+        OTHER:
+            return _temp_scale
 
 PRI readReg(region, reg, nr_bytes, addr_buff) | cmd_packet
 ' Reads bytes from device register in selected memory region
