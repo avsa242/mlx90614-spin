@@ -5,7 +5,7 @@
     Description: Driver for the Melexis MLX90614 IR thermometer
     Copyright (c) 2020
     Started Mar 17, 2019
-    Updated Mar 5, 2020
+    Updated May 15, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -126,7 +126,7 @@ PUB Scale(temp_scale)
         OTHER:
             return _temp_scale
 
-PRI readReg(region, reg, nr_bytes, buff_addr) | cmd_packet, tmp
+PRI readReg(region, reg_nr, nr_bytes, buff_addr) | cmd_packet, tmp
 ' Reads bytes from device register in selected memory region
     cmd_packet.byte[0] := SLAVE_WR
 
@@ -137,7 +137,7 @@ PRI readReg(region, reg, nr_bytes, buff_addr) | cmd_packet, tmp
         OTHER:
             return
 
-    cmd_packet.byte[1] := region | reg
+    cmd_packet.byte[1] := region | reg_nr
 
     i2c.Start
     repeat tmp from 0 to 1
@@ -149,7 +149,7 @@ PRI readReg(region, reg, nr_bytes, buff_addr) | cmd_packet, tmp
         byte[buff_addr][tmp] := i2c.Read(tmp == nr_bytes-1)
     i2c.Stop
 
-PRI writeReg(region, reg, nr_bytes, val) | cmd_packet[2], tmp
+PRI writeReg(region, reg_nr, nr_bytes, val) | cmd_packet[2], tmp
 ' Writes bytes to device register in selected memory region
     cmd_packet.byte[0] := SLAVE_WR
 
@@ -159,7 +159,7 @@ PRI writeReg(region, reg, nr_bytes, val) | cmd_packet[2], tmp
         OTHER:
             return
 
-    cmd_packet.byte[1] := region | reg
+    cmd_packet.byte[1] := region | reg_nr
     cmd_packet.byte[2] := val.byte[LSB]
     cmd_packet.byte[3] := val.byte[MSB]
     cmd_packet.byte[4] := val.byte[PEC]
