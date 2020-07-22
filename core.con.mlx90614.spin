@@ -87,7 +87,7 @@ CON
     T_OBJ1                  = $07
     T_OBJ2                  = $08
 
-#ifndef __propeller2
+#ifndef __propeller2__
 PUB Null
 '' This is not a top-level object
 #endif
