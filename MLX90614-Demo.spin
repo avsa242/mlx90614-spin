@@ -5,7 +5,7 @@
     Description: Demo for the MLX90614 driver
     Copyright (c) 2020
     Started Mar 17, 2019
-    Updated Mar 5, 2020
+    Updated Dec 7, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -15,90 +15,88 @@ CON
     _clkmode    = cfg#_clkmode
     _xinfreq    = cfg#_xinfreq
 
+' -- User-modifiable constants
     LED         = cfg#LED1
-    SER_RX      = 31
-    SER_TX      = 30
     SER_BAUD    = 115_200
 
     I2C_SCL     = 28
     I2C_SDA     = 29
     I2C_HZ      = 100_000
 
+    TEMP_SCALE  = C
+' --
+
     C           = 0
     F           = 1
     K           = 2
-
-' Choose one of the temperature scales above
-    TEMP_SCALE  = C
 
 OBJ
 
     cfg     : "core.con.boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
-    io      : "io"
     mlx     : "sensor.temperature.mlx90614.i2c"
     int     : "string.integer"
 
-VAR
+PUB Main{} | Tobj, Tamb
 
-    byte _ser_cog
+    setup{}
 
-PUB Main | Tobj, Tamb
-
-    Setup
-
-    mlx.Scale(TEMP_SCALE)
+    mlx.tempscale(TEMP_SCALE)
 
     repeat
-        Tobj := mlx.ObjTemp (1)
-        Tamb := mlx.AmbientTemp
+        Tobj := mlx.objtemp(1)
+        Tamb := mlx.ambienttemp{}
 
-        ser.Position (0, 5)
+        ser.position(0, 5)
         ser.str(string("Tobj: "))
-        Decimal(Tobj, 100)
-        ser.Newline
+        decimal(Tobj, 100)
+        ser.newline{}
 
         ser.str(string("Ta: "))
-        Decimal(Tamb, 100)
+        decimal(Tamb, 100)
 
-        time.MSleep (100)
+        time.msleep(100)
 
-PUB Decimal(scaled, divisor) | whole[4], part[4], places, tmp
-' Display a fixed-point scaled up number in decimal-dot notation - scale it back down by divisor
-'   e.g., Decimal (314159, 100000) would display 3.14159 on the termainl
-'   scaled: Fixed-point scaled up number
-'   divisor: Divide scaled-up number by this amount
+PRI Decimal(scaled, divisor) | whole[4], part[4], places, tmp, sign
+' Display a scaled up number as a decimal
+'   Scale it back down by divisor (e.g., 10, 100, 1000, etc)
     whole := scaled / divisor
     tmp := divisor
     places := 0
+    part := 0
+    sign := 0
+    if scaled < 0
+        sign := "-"
+    else
+        sign := " "
 
     repeat
         tmp /= 10
         places++
     until tmp == 1
-    part := int.DecZeroed(||(scaled // divisor), places)
+    scaled //= divisor
+    part := int.deczeroed(||(scaled), places)
 
-    ser.Dec (whole)
-    ser.Char (".")
-    ser.Str (part)
+    ser.char(sign)
+    ser.dec(||(whole))
+    ser.char(".")
+    ser.str(part)
 
-PUB Setup
+PUB Setup{}
 
-    repeat until _ser_cog := ser.StartRXTX (SER_RX, SER_TX, 0, SER_BAUD)
-    time.Sleep(30)
-    ser.Clear
-    ser.Str(string("Serial terminal started", ser#CR, ser#LF))
-    if mlx.Start
-        ser.Str (string("MLX90614 driver started", ser#CR, ser#LF))
+    ser.start(SER_BAUD)
+    time.msleep(30)
+    ser.clear{}
+    ser.strln(string("Serial terminal started"))
+    if mlx.startx(I2C_SCL, I2C_SDA, I2C_HZ)
+        ser.str(string("MLX90614 driver started"))
     else
-        ser.Str (string("MLX90614 driver failed to start - halting", ser#CR, ser#LF))
-        mlx.Stop
-        time.MSleep (30)
-        ser.Stop
-        FlashLED(LED, 500)
-
-#include "lib.utility.spin"
+        ser.str(string("MLX90614 driver failed to start - halting"))
+        mlx.stop{}
+        time.msleep(30)
+        ser.stop{}
+        repeat
 
 DAT
 {
