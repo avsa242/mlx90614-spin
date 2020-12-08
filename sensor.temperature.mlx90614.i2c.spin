@@ -65,22 +65,10 @@ PUB Stop{}
 
 PUB AmbientTemp{}: temp
 ' Reads the Ambient temperature
-'   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
+'   Returns: Temperature in hundredths of a degree (e.g., 2135 is 21.35 deg),
+'       using the chosen scale
     readreg(core#CMD_RAM, core#T_A, 2, @temp)
-
-    temp &= $FFFF
-
-    case _temp_scale
-        C:                                  ' Result will be in centidegrees Celsius
-            temp := (temp * 2) - 273_15
-        F:                                  ' Result will be in centidegrees Fahrenheit
-            temp := ((temp * 2) - 273_15) * 9_00/5_00 + 32_00
-        K:                                  ' Result will be in centidegrees Kelvin
-            temp := temp * 2
-        other:
-            return
-
-    return
+    return calctemp(temp)
 
 PUB DeviceID{}: id
 ' Reads the sensor ID
@@ -96,7 +84,8 @@ PUB ObjTemp(channel): temp
 '   channel
 '       Valid values: 1, 2 (CH2 availability is device-dependent)
 '       Any other value is ignored
-'   Returns: Calculated temperature in centidegrees (e.g., 2135 is 21.35 deg), using the chosen scale
+'   Returns: Temperature in hundredths of a degree (e.g., 2135 is 21.35 deg),
+'       using the chosen scale
     case channel
         1:
             readreg(core#CMD_RAM, core#T_OBJ1, 2, @temp)
@@ -105,19 +94,7 @@ PUB ObjTemp(channel): temp
         other:
             return
 
-    temp &= $FFFF
-
-    case _temp_scale
-        C:                                  ' Result will be in centidegrees Celsius
-            temp := (temp * 2) - 273_15
-        F:                                  ' Result will be in centidegrees Fahrenheit
-            temp := ((temp * 2) - 273_15) * 9_00/5_00 + 32_00
-        K:                                  ' Result will be in centidegrees Kelvin
-            temp := temp * 2
-        other:
-            return
-
-    return
+    return calctemp(temp)
 
 PUB TempScale(scale): curr_scl
 ' Set scale of temperature data returned by AmbientTemp and ObjTemp methods
@@ -129,9 +106,22 @@ PUB TempScale(scale): curr_scl
     case scale
         C, F, K:
             _temp_scale := scale
-            return _temp_scale
         other:
             return _temp_scale
+
+PRI calcTemp(temp_word): temp_cal
+' Calculate temperature, using temperature word
+'   Returns: temperature, in hundredths of a degree, in chosen scale
+    temp_word *= 2
+    case _temp_scale
+        C:
+            return temp_word - 273_15
+        F:
+            return (temp_word - 273_15) * 9_00/5_00 + 32_00
+        K:
+            return
+        other:
+            return FALSE
 
 PRI readReg(region, reg, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from device into ptr_buff
