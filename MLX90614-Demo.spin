@@ -5,7 +5,7 @@
     Description: Demo for the MLX90614 driver
     Copyright (c) 2020
     Started Mar 17, 2019
-    Updated Dec 7, 2020
+    Updated Dec 8, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -21,7 +21,7 @@ CON
 
     I2C_SCL     = 28
     I2C_SDA     = 29
-    I2C_HZ      = 100_000
+    I2C_HZ      = 100_000                       ' max is 100_000
 
     TEMP_SCALE  = C
 ' --
@@ -49,11 +49,11 @@ PUB Main{} | Tobj, Tamb
         Tamb := mlx.ambienttemp{}
 
         ser.position(0, 5)
-        ser.str(string("Tobj: "))
+        ser.str(string("Object temp: "))
         decimal(Tobj, 100)
         ser.newline{}
 
-        ser.str(string("Ta: "))
+        ser.str(string("Ambient temp: "))
         decimal(Tamb, 100)
 
         time.msleep(100)

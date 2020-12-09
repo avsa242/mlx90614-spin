@@ -18,7 +18,6 @@ CON
     DEF_SCL         = 28
     DEF_SDA         = 29
     DEF_HZ          = 100_000
-    I2C_MAX_FREQ    = core#I2C_MAX_FREQ
 
     MSB             = 0
     LSB             = 1
@@ -123,7 +122,7 @@ PRI calcTemp(temp_word): temp_cal
         other:
             return FALSE
 
-PRI readReg(region, reg, nr_bytes, ptr_buff) | cmd_pkt
+PRI readReg(region, reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from device into ptr_buff
     case region
         core#CMD_RAM:
@@ -133,7 +132,7 @@ PRI readReg(region, reg, nr_bytes, ptr_buff) | cmd_pkt
             return
 
     cmd_pkt.byte[0] := SLAVE_WR
-    cmd_pkt.byte[1] := region | reg
+    cmd_pkt.byte[1] := region | reg_nr
 
     i2c.start{}
     i2c.wr_block(@cmd_pkt, 2)
@@ -142,7 +141,7 @@ PRI readReg(region, reg, nr_bytes, ptr_buff) | cmd_pkt
     i2c.rd_block(ptr_buff, nr_bytes, TRUE)
     i2c.stop{}
 
-PRI writreg(region, reg, nr_bytes, val) | cmd_pkt[2]
+PRI writeReg(region, reg_nr, nr_bytes, val) | cmd_pkt[2]
 ' Write nr_bytes from val to device
     case region
         core#CMD_EEPROM:
@@ -151,7 +150,7 @@ PRI writreg(region, reg, nr_bytes, val) | cmd_pkt[2]
             return
 
     cmd_pkt.byte[0] := SLAVE_WR
-    cmd_pkt.byte[1] := region | reg
+    cmd_pkt.byte[1] := region | reg_nr
     cmd_pkt.byte[2] := val.byte[LSB]
     cmd_pkt.byte[3] := val.byte[MSB]
     cmd_pkt.byte[4] := val.byte[PEC]
