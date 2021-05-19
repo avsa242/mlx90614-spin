@@ -10,7 +10,7 @@ This is a P8X32A/Propeller 1, P2X8C4M64P/Propeller 2 driver object for the Melex
 * I2C connection at up to 100kHz
 * Reads IR channels 1 and 2 (availability dependent on device package)
 * Reads ambient temperature sensor
-* Returns temperature in centi-degrees (hundreths) Kelvin, Celsius or Fahrenheit
+* Returns temperature in centi-degrees (hundredths) Kelvin, Celsius or Fahrenheit
 
 ## Requirements
 
@@ -23,15 +23,14 @@ P2/SPIN2:
 
 ## Compiler Compatibility
 
-* P1/SPIN1: OpenSpin (tested with 1.00.81)
-* P2/SPIN2: FastSpin (tested with 4.1.10-beta)
+* P1/SPIN1: OpenSpin (tested with 1.00.81), FlexSpin (tested with 5.3.3-beta)
+* P2/SPIN2: FlexSpin (tested with 5.3.3-beta)
 * ~~BST~~ (incompatible - no preprocessor)
 * ~~Propeller Tool~~ (incompatible - no preprocessor)
 * ~~PNut~~ (incompatible - no preprocessor)
 
 ## Limitations
 
-* Very early in development - may malfunction or outright fail to build
 * Doesn't support changing the device's slave address
 * Doesn't support PWM mode (unplanned)
 
