@@ -9,7 +9,7 @@
     See end of file for terms of use.
     --------------------------------------------
 }
-{ pull in methods common to all Temp/RH drivers }
+{ pull in methods common to all Temp drivers }
 #include "sensor.temp-common.spinh"
 
 CON
