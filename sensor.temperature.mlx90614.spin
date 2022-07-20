@@ -5,7 +5,7 @@
     Description: Driver for the Melexis MLX90614 IR thermometer
     Copyright (c) 2022
     Started Mar 17, 2019
-    Updated May 13, 2022
+    Updated Jul 20, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -27,7 +27,12 @@ CON
 
 OBJ
 
+{ decide: Bytecode I2C engine, or PASM? Default is PASM if BC isn't specified }
+#ifdef MLX90614_I2C_BC
+    i2c : "com.i2c.nocog"                       ' BC I2C engine
+#else
     i2c : "com.i2c"                             ' PASM I2C engine
+#endif
     core: "core.con.mlx90614"                   ' HW-specific constants
     time: "time"                                ' timekeeping methods
 
