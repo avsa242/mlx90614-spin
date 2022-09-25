@@ -5,7 +5,7 @@
     Description: Driver for the Melexis MLX90614 IR thermometer (P2 version)
     Copyright (c) 2022
     Started Mar 17, 2019
-    Updated Sep 20, 2022
+    Updated Sep 25, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -42,7 +42,7 @@ PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
         if (status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ))
             waitus(core.T_POR)
             if i2c.present(SLAVE_WR)            ' check bus device presence
-                if deviceid()
+                if (dev_id())
                     return
     ' if this point is reached, something above failed
     ' Double check I/O pin assignments, connections, power
@@ -54,41 +54,41 @@ PUB stop()
     i2c.deinit()
     _temp_ch := 0
 
-PUB ambienttempdata(): temp_adc
+PUB amb_temp_data(): temp_adc
 ' Read ambient temperature ADC data
 '   Returns: s16
     readreg(core.CMD_RAM, core.T_A, 2, @temp_adc)
 
-PUB ambienttemp(): temp
+PUB amb_temp(): temp
 ' Reads the Ambient temperature
 '   Returns: Temperature in hundredths of a degree (e.g., 2135 is 21.35 deg),
 '       using the chosen scale
-    return tempword2deg(ambienttempdata())
+    return temp_word2deg(amb_temp_data())
 
-PUB deviceid(): id
+PUB dev_id(): id
 ' Reads the sensor ID
     readreg(core.CMD_EEPROM, core.EE_ID_1, 4, @id)
 
-PUB eeprom(ptr_buff)
+PUB rd_eeprom(ptr_buff)
 ' Dump EEPROM to array at ptr_buff
 '   NOTE: ptr_buff must be at least 64 bytes
     readreg(core.CMD_EEPROM, $00, 64, ptr_buff)
 
-PUB tempchannel(ch): curr_ch
+PUB temp_chan(ch): curr_ch
 ' Set temperature sensor channel #
 '   Valid values: 1, 2 (CH2 availability is device-dependent)
 '   Any other value returns the current setting
     if (lookdown(ch: 1..2))
         ch -= 1
 
-PUB tempdata(): temp_word
+PUB temp_data(): temp_word
 ' Read object temperature ADC word
 '   Returns: s16
     temp_word := 0
     readreg(core.CMD_RAM, core.T_OBJ1+_temp_ch, 3, @temp_word)
     return temp_word & $ffff
 
-PUB tempword2deg(temp_word): temp
+PUB temp_word2deg(temp_word): temp
 ' Convert temperature ADC word to temperature
 '   Returns: temperature, in hundredths of a degree, in chosen scale
     temp_word *= 2
