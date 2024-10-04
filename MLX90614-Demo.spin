@@ -1,61 +1,62 @@
 {
-    --------------------------------------------
-    Filename: MLX90614-Demo.spin
-    Author: Jesse Burt
-    Description: MLX90614 driver demo
+----------------------------------------------------------------------------------------------------
+    Filename:       MLX90614-Demo.spin
+    Description:    MLX90614 driver demo
         * Object temp data output
-    Copyright (c) 2022
-    Started Mar 17, 2019
-    Updated Oct 16, 2022
-    See end of file for terms of use.
-    --------------------------------------------
-
-    Build-time symbols supported by driver:
-        -DMLX90614_I2C (default if none specified)
-        -DMLX90614_I2C_BC
+    Author:         Jesse Burt
+    Started:        Mar 17, 2019
+    Updated:        Oct 4, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
+
+' Uncomment the two lines below to use the bytecode-based I2C engine in the driver
+'#define MLX90614_I2C_BC
+'#pragma exportdef(MLX90614_I2C_BC)
+
+
 CON
 
-    _clkmode    = cfg#_clkmode
-    _xinfreq    = cfg#_xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
-' -- User-modifiable constants
-    SER_BAUD    = 115_200
-
-    { I2C configuration }
-    SCL_PIN     = 28
-    SDA_PIN     = 29
-    I2C_FREQ    = 100_000                       ' max is 100_000
-' --
 
 OBJ
 
-    cfg:    "boardcfg.flip"
-    sensor:  "sensor.temperature.mlx90614"
-    ser:    "com.serial.terminal.ansi"
     time:   "time"
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
+    sensor: "sensor.temperature.mlx90614" | SCL=28, SDA=29, I2C_FREQ=100_000
 
-PUB setup{}
 
-    ser.start(SER_BAUD)
-    time.msleep(10)
-    ser.clear{}
-    ser.strln(string("Serial terminal started"))
+PUB main() | temp, tscl
 
-    if (sensor.startx(SCL_PIN, SDA_PIN, I2C_FREQ))
-        ser.strln(string("MLX90614 driver started"))
+    setup()
+    sensor.temp_scale(sensor.C)
+
+    repeat
+        ser.pos_xy(0, 3)
+        temp := sensor.temperature()
+        tscl := lookupz(sensor.temp_scale(-2): "C", "F", "K")
+        ser.printf3(@"Temp. (deg %c): %3.3d.%02.2d\n\r", tscl, (temp / 100), ||(temp // 100))
+
+
+PUB setup()
+
+    ser.start()
+    time.msleep(30)
+    ser.clear()
+    ser.strln(@"Serial terminal started")
+
+    if ( sensor.start() )
+        ser.strln(@"MLX90614 driver started")
     else
-        ser.strln(string("MLX90614 driver failed to start - halting"))
+        ser.strln(@"MLX90614 driver failed to start - halting")
         repeat
 
-    sensor.temp_scale(sensor#C)
-    demo{}
-
-#include "tempdemo.common.spinh"             ' code common to all temp demos
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
