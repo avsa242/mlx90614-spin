@@ -37,7 +37,7 @@ OBJ
 #endif
     core:   "core.con.mlx90614"                 ' HW-specific constants
     time:   "time"                              ' timekeeping methods
-    crc:    "math.crc"
+    crc:    "math.crc"                          ' CRC routines
 
 
 VAR
@@ -113,7 +113,7 @@ PUB serial_num(p_sn) | n
 ' Read serial number from sensor
 '   p_sn:   pointer to buffer to copy serial number to (must be at least 4 words in size)
     repeat n from 0 to 3
-        readreg(core.CMD_EEPROM, core.EE_ID_1+n, 1, p_n+n)
+        readreg(core.CMD_EEPROM, core.EE_ID_1+n, 1, p_sn+n)
 
 
 PUB set_temp_channel(ch)
