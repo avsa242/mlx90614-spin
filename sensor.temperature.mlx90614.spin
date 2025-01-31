@@ -185,24 +185,38 @@ PRI readreg(region, reg_nr, len, p_buff) | cmd_pkt, rd, tmp[2]
         bytemove(p_buff, @rd, 2)
 
 
-PRI writereg(region, reg_nr, len, val) | cmd_pkt[2]
-' Write len from val to device
-    case region
-        core.CMD_EEPROM:
-        core.CMD_SLEEPMODE:
-        other:
-            return
-
-    cmd_pkt.byte[2] := val.byte[LSB]
-    cmd_pkt.byte[3] := val.byte[MSB]
+PRI writereg(reg_nr, val) | cmd_pkt[2]
+' Write value to sensor EEPROM
+'   reg_nr: sensor EEPROM register/address
+'   val:    value to write
+    cmd_pkt.byte[0] := SLAVE_WR
+    cmd_pkt.byte[1] := core.CMD_EEPROM|reg_nr
+    cmd_pkt.byte[2] := 0
+    cmd_pkt.byte[3] := 0
     cmd_pkt.byte[4] := crc.crc8(@cmd_pkt, 4, ...' check the previous four bytes
                                 $00, $00, ...
                                 crc.POLY8_MELEXIS, ...
                                 0, 0)
 
+    ' erase the cell
     i2c.start()
     i2c.wrblock_lsbf(@cmd_pkt, 5)
     i2c.stop()
+    time.usleep(core.T_ERASE_MAX)               ' wait for the EE to finish
+
+
+    cmd_pkt.byte[2] := val.byte[0]              ' update the cmd packet with the new value
+    cmd_pkt.byte[3] := val.byte[1]              '   and CRC
+    cmd_pkt.byte[4] := crc.crc8(@cmd_pkt, 4, ...
+                                $00, $00, ...
+                                crc.POLY8_MELEXIS, ...
+                                0, 0)
+
+    ' now write the new value
+    i2c.start()
+    i2c.wrblock_lsbf(@cmd_pkt, 5)
+    i2c.stop()
+    time.usleep(core.T_WRITE_MAX)
 
 
 DAT

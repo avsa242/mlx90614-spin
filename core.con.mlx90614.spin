@@ -4,7 +4,7 @@
     Description:    MLX90614-specific constants
     Author:         Jesse Burt
     Started:        Mar 17, 2019
-    Updated:        Oct 4, 2024
+    Updated:        Jan 31, 2025
     Copyright (c) 2024 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -16,6 +16,11 @@ CON
     SLAVE_ADDR              = $5A << 1
 
     T_POR                   = 250_000           ' usec
+    T_ERASE                 = 5_000             ' EE erase cell
+    T_WRITE                 = 5_000             ' EE write cell
+    T_ERASE_MAX             = 10_000            ' safer values of the above
+    T_WRITE_MAX             = 10_000            '
+
 
 ' Commands
     CMD_RAM                 = $00
@@ -95,7 +100,7 @@ PUB null()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
