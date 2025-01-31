@@ -4,8 +4,8 @@
     Description:    Driver for the Melexis MLX90614 IR thermometer
     Author:         Jesse Burt
     Started:        Mar 17, 2019
-    Updated:        Oct 4, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Jan 31, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -37,6 +37,7 @@ OBJ
 #endif
     core:   "core.con.mlx90614"                 ' HW-specific constants
     time:   "time"                              ' timekeeping methods
+    crc:    "math.crc"
 
 
 VAR
@@ -95,13 +96,24 @@ PUB amb_temp(): temp
 PUB dev_id(): id
 ' Reads the sensor ID
     id := 0
-    readreg(core.CMD_EEPROM, core.EE_ID_1, 4, @id)
+    readreg(core.CMD_EEPROM, core.EE_MLX_SLAVEADDR, 1, @id)
+
+    return (id & $ff)                           ' might be garbage in EE high byte; discard it
 
 
-PUB rd_eeprom(ptr_buff)
-' Dump EEPROM to array at ptr_buff
-'   NOTE: ptr_buff must be at least 64 bytes
-    readreg(core.CMD_EEPROM, $00, 64, ptr_buff)
+PUB rd_eeprom(p_buff) | r
+' Dump EEPROM to array at p_buff
+'   NOTE: p_buff must be at least 64 bytes
+'    readreg(core.CMD_EEPROM, $00, 64, p_buff)
+    repeat r from $00 to $1f
+        readreg(core.CMD_EEPROM, r, 2, p_buff+(r*2) )
+
+
+PUB serial_num(p_sn) | n
+' Read serial number from sensor
+'   p_sn:   pointer to buffer to copy serial number to (must be at least 4 words in size)
+    repeat n from 0 to 3
+        readreg(core.CMD_EEPROM, core.EE_ID_1+n, 1, p_n+n)
 
 
 PUB set_temp_channel(ch)
@@ -119,7 +131,7 @@ PUB temp_data(): temp_word
 ' Read object temperature ADC word
 '   Returns: s16
     temp_word := 0
-    readreg(core.CMD_RAM, (core.T_OBJ1 + _temp_ch), 3, @temp_word)
+    readreg(core.CMD_RAM, (core.T_OBJ1 + _temp_ch), 2, @temp_word)
     return (temp_word & $ffff)
 
 
@@ -138,8 +150,8 @@ PUB temp_word2deg(temp_word): temp
             return FALSE
 
 
-PRI readreg(region, reg_nr, nr_bytes, ptr_buff) | cmd_pkt
-' Read nr_bytes from device into ptr_buff
+PRI readreg(region, reg_nr, len, p_buff) | cmd_pkt, rd, tmp[2]
+' Read word(s) from device into p_buff
     case region
         core.CMD_RAM:
         core.CMD_EEPROM:
@@ -150,36 +162,52 @@ PRI readreg(region, reg_nr, nr_bytes, ptr_buff) | cmd_pkt
     cmd_pkt.byte[0] := SLAVE_WR
     cmd_pkt.byte[1] := region | reg_nr
 
+    rd := 0
     i2c.start()
     i2c.wrblock_lsbf(@cmd_pkt, 2)
     i2c.start()
     i2c.write(SLAVE_RD)
-    i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c.NAK)
+    i2c.rdblock_lsbf(@rd, 3, i2c.NAK)           ' read word plus the PEC
     i2c.stop()
 
+    ' the CRC from the sensor incorporates the command sent as well the data it sent back
+    tmp.byte[0] := cmd_pkt.byte[0]
+    tmp.byte[1] := cmd_pkt.byte[1]
+    tmp.byte[2] := SLAVE_RD
+    tmp.byte[3] := rd.byte[0]
+    tmp.byte[4] := rd.byte[1]
 
-PRI writereg(region, reg_nr, nr_bytes, val) | cmd_pkt[2]
-' Write nr_bytes from val to device
+    ' compare it to our own check and if it matches, copy the data to the destination
+    if ( crc.crc8(  @tmp, 5, ...
+                    $00, $00, ...               ' initial value = $00, xor final CRC with $00
+                    crc.POLY8_MELEXIS, ...
+                    0, 0 ) == rd.byte[2])       ' input, output reflect = false
+        bytemove(p_buff, @rd, 2)
+
+
+PRI writereg(region, reg_nr, len, val) | cmd_pkt[2]
+' Write len from val to device
     case region
         core.CMD_EEPROM:
         core.CMD_SLEEPMODE:
         other:
             return
 
-    cmd_pkt.byte[0] := SLAVE_WR
-    cmd_pkt.byte[1] := region | reg_nr
     cmd_pkt.byte[2] := val.byte[LSB]
     cmd_pkt.byte[3] := val.byte[MSB]
-    cmd_pkt.byte[4] := val.byte[PEC]
+    cmd_pkt.byte[4] := crc.crc8(@cmd_pkt, 4, ...' check the previous four bytes
+                                $00, $00, ...
+                                crc.POLY8_MELEXIS, ...
+                                0, 0)
 
     i2c.start()
-    i2c.wrblock_lsbf(@cmd_pkt, 2 + nr_bytes)
+    i2c.wrblock_lsbf(@cmd_pkt, 5)
     i2c.stop()
 
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
