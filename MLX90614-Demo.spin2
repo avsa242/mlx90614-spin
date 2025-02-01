@@ -19,7 +19,7 @@ CON
 OBJ
 
     ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
-    sensor: "sensor.temperature.mlx90614" | SCL=8, SDA=9, I2C_FREQ=100_000
+    sensor: "sensor.temperature.mlx90614" | SCL=8, SDA=9, I2C_FREQ=100_000, I2C_ADDR=$5a
 
 
 PUB main() | temp, tscl

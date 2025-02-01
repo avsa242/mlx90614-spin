@@ -17,14 +17,10 @@ CON
     SCL         = 28
     SDA         = 29
     I2C_FREQ    = 100_000
-    I2C_ADDR    = 0
+    I2C_ADDR    = $5a                           ' factory-default slave address
 
     SLAVE_WR    = core.SLAVE_ADDR
     SLAVE_RD    = core.SLAVE_ADDR | 1
-
-    MSB         = 0
-    LSB         = 1
-    PEC         = 2
 
 
 OBJ
@@ -42,6 +38,7 @@ OBJ
 
 VAR
 
+    byte _slave_addr
     byte _temp_ch                               ' temp. sensor channel #
 
 
@@ -51,21 +48,23 @@ PUB null()
 
 PUB start(): status
 ' Start using default I/O settings
-    return startx(SCL, SDA, I2C_FREQ)
+    return startx(SCL, SDA, I2C_FREQ, I2C_ADDR)
 
 
-PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
+PUB startx(SCL_PIN, SDA_PIN, I2C_HZ, ADDR_BITS): status
 ' Start the driver with custom I/O settings
 '   SCL_PIN:    I2C clock, 0..31
 '   SDA_PIN:    I2C data, 0..31
 '   I2C_HZ:     I2C clock speed (max official specification is 400_000 but is unenforced)
+'   ADDR_BITS:  sensor slave address (addresses from $01..$7f)
 '   Returns:
 '       cog ID+1 of I2C engine on success (= calling cog ID+1, if the bytecode I2C engine is used)
 '       0 on failure
     if ( lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31) )
         if ( status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ) )
             time.usleep(core.T_POR)
-            if ( dev_id() )
+            _slave_addr := (ADDR_BITS << 1)
+            if ( dev_id() => 0 )
                 return
     ' if this point is reached, something above failed
     ' Double check I/O pin assignments, connections, power
@@ -94,24 +93,58 @@ PUB amb_temp(): t
 
 PUB dev_id(): id
 ' Reads the sensor ID
+    id := readreg(core.EE_MLX_SLAVEADDR)
+    if ( id < 0 )
+        return                                  ' error
 
     ' the high byte at this EE address might contain garbage so discard it; we only want the
     '   lower byte
-    return ( readreg(core.EE_MLX_SLAVEADDR) & $ff )
+    return (id & $ff)
 
 
-PUB rd_eeprom(p_buff) | r
+PUB rd_eeprom(p_buff): s | r, tmp[16]
 ' Dump EEPROM to array at p_buff
 '   NOTE: p_buff must be at least 32 words
-    repeat r from $00 to $1f
-        word[p_buff][r] := readreg(r)
+    s := 0
+    longfill(@tmp, 0, 16)
+    repeat r from $20 to $3f
+        s := readreg(r)
+        if ( s < 0 )
+            return                              ' error
+        tmp.word[r-$20] := s
+
+    wordmove(p_buff, @tmp, 32)
 
 
-PUB serial_num(p_sn) | n
+PUB serial_num(p_sn): s | n, tmp[2]
 ' Read serial number from sensor
 '   p_sn:   pointer to buffer to copy serial number to (must be at least 4 words in size)
+    s := 0
     repeat n from 0 to 3
-        word[p_sn][n] := readreg(core.EE_ID_1+n)
+        s := readreg(core.EE_ID_1+n)
+        if ( s < 0 )
+            return                              ' error
+        tmp.word[n] := s
+
+    wordmove(p_sn, @tmp, 4)
+
+
+PUB set_slave_address(a): s | t
+' Set the sensor's slave address
+'   a:  new address ($01..$7f)
+'   NOTE: The sensor's power must be cycled for the new address to take effect.
+'       Until that time, the sensor will continue to respond on the prior address.
+    if ( (a < $01) or (a > $7f) )               ' only allow valid addresses
+        return -1
+
+    ' read the current address; we only really care about the LSB, but the MSB in EEPROM may have
+    '   some non-zero value in it. It isn't documented specifically, but preserve it in case it's
+    '   important in some way. Then write it, combined with the new address.
+    t := readreg(core.EE_MLX_SLAVEADDR) & $ff00
+    s := write_eeprom(core.EE_MLX_SLAVEADDR, (a & $ff) | t)
+    if ( s < 0 )
+        return                                  ' error
+    _slave_addr := (a << 1)                     ' set the new address in hub RAM
 
 
 PUB set_temp_channel(ch)
@@ -128,7 +161,11 @@ PUB temp_channel(): curr_ch
 PUB temp_data(): w
 ' Read object temperature ADC word
 '   Returns: s16
-    return (readreg( (core.T_OBJ1 + _temp_ch) ) & $ffff)
+    w := readreg(core.T_OBJ1 + _temp_ch)
+    if ( w < 0 )
+        return                                  ' error
+
+    return (w & $ffff)
 
 
 PUB temp_word2deg(w): d
@@ -146,23 +183,30 @@ PUB temp_word2deg(w): d
             return FALSE
 
 
-PRI readreg(reg_nr): v | cmd_pkt, rd, tmp[2]
+PRI readreg(reg_nr): v | cmd_pkt, rd, tmp[2], ack
 ' Read word(s) from device into p_buff
-    cmd_pkt.byte[0] := SLAVE_WR
+    cmd_pkt.byte[0] := _slave_addr
     cmd_pkt.byte[1] := reg_nr
 
+    v := 0
     rd := 0
     i2c.start()
-    i2c.wrblock_lsbf(@cmd_pkt, 2)
+    ack := i2c.wrblock_lsbf(@cmd_pkt, 2)
+    if ( ack <> i2c.ACK )
+        i2c.stop()                              ' no response from sensor
+        return -1
     i2c.start()
-    i2c.write(SLAVE_RD)
+    ack := i2c.write(_slave_addr|1)
+    if ( ack <> i2c.ACK )
+        i2c.stop()                              ' no response from sensor
+        return -1
     i2c.rdblock_lsbf(@rd, 3, i2c.NAK)           ' read word plus the PEC
     i2c.stop()
 
     ' the CRC from the sensor incorporates the command sent as well the data it sent back
     tmp.byte[0] := cmd_pkt.byte[0]
     tmp.byte[1] := cmd_pkt.byte[1]
-    tmp.byte[2] := SLAVE_RD
+    tmp.byte[2] := _slave_addr|1
     tmp.byte[3] := rd.byte[0]
     tmp.byte[4] := rd.byte[1]
 
@@ -173,14 +217,15 @@ PRI readreg(reg_nr): v | cmd_pkt, rd, tmp[2]
                     0, 0 ) == rd.byte[2])       ' input, output reflect = false
         return rd.word[0]
     else
-        return -1                               ' error: bad CRC
+        return -2                               ' error: bad CRC
 
 
-PRI write_eeprom(reg_nr, val) | cmd_pkt[2]
+PRI write_eeprom(reg_nr, val): s | cmd_pkt[2], ack
 ' Write value to sensor EEPROM
 '   reg_nr: sensor EEPROM register/address
 '   val:    value to write
-    cmd_pkt.byte[0] := SLAVE_WR
+    s := 0
+    cmd_pkt.byte[0] := _slave_addr
     cmd_pkt.byte[1] := reg_nr
     cmd_pkt.byte[2] := 0
     cmd_pkt.byte[3] := 0
@@ -191,7 +236,10 @@ PRI write_eeprom(reg_nr, val) | cmd_pkt[2]
 
     ' erase the cell
     i2c.start()
-    i2c.wrblock_lsbf(@cmd_pkt, 5)
+    ack := i2c.wrblock_lsbf(@cmd_pkt, 5)
+    if ( ack <> i2c.ACK )
+        i2c.stop()                              ' no response from sensor
+        return -1
     i2c.stop()
     time.usleep(core.T_ERASE_MAX)               ' wait for the EE to finish
 
@@ -205,7 +253,10 @@ PRI write_eeprom(reg_nr, val) | cmd_pkt[2]
 
     ' now write the new value
     i2c.start()
-    i2c.wrblock_lsbf(@cmd_pkt, 5)
+    ack := i2c.wrblock_lsbf(@cmd_pkt, 5)
+    if ( ack <> i2c.ACK )
+        i2c.stop()                              ' no response from sensor
+        return -1
     i2c.stop()
     time.usleep(core.T_WRITE_MAX)
 

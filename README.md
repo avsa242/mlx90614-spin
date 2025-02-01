@@ -12,6 +12,7 @@ This is a P8X32A/Propeller 1, P2X8C4M64P/Propeller 2 driver object for the Melex
 * Reads IR channels 1 and 2 (ch2 availability dependent on device package)
 * Reads ambient temperature sensor
 * Returns temperature in centi-degrees (hundredths) Kelvin, Celsius or Fahrenheit
+* Change sensor's slave address in EEPROM
 
 
 ## Requirements

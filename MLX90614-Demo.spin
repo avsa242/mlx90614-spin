@@ -25,7 +25,7 @@ OBJ
 
     time:   "time"
     ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
-    sensor: "sensor.temperature.mlx90614" | SCL=28, SDA=29, I2C_FREQ=100_000
+    sensor: "sensor.temperature.mlx90614" | SCL=28, SDA=29, I2C_FREQ=100_000, I2C_ADDR=$5a
 
 
 PUB main() | temp, tscl
