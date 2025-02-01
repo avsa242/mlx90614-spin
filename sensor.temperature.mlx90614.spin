@@ -82,7 +82,7 @@ PUB stop()
 PUB amb_temp_data(): a
 ' Read ambient temperature ADC data
 '   Returns: s16
-    return readreg(core.CMD_RAM, core.T_A)
+    return readreg(core.T_A)
 
 
 PUB amb_temp(): t
@@ -97,21 +97,21 @@ PUB dev_id(): id
 
     ' the high byte at this EE address might contain garbage so discard it; we only want the
     '   lower byte
-    return ( readreg(core.CMD_EEPROM, core.EE_MLX_SLAVEADDR) & $ff )
+    return ( readreg(core.EE_MLX_SLAVEADDR) & $ff )
 
 
 PUB rd_eeprom(p_buff) | r
 ' Dump EEPROM to array at p_buff
 '   NOTE: p_buff must be at least 32 words
     repeat r from $00 to $1f
-        word[p_buff][r] := readreg(core.CMD_EEPROM, r)
+        word[p_buff][r] := readreg(r)
 
 
 PUB serial_num(p_sn) | n
 ' Read serial number from sensor
 '   p_sn:   pointer to buffer to copy serial number to (must be at least 4 words in size)
     repeat n from 0 to 3
-        word[p_sn][n] := readreg(core.CMD_EEPROM, core.EE_ID_1+n)
+        word[p_sn][n] := readreg(core.EE_ID_1+n)
 
 
 PUB set_temp_channel(ch)
@@ -128,7 +128,7 @@ PUB temp_channel(): curr_ch
 PUB temp_data(): w
 ' Read object temperature ADC word
 '   Returns: s16
-    return (readreg(core.CMD_RAM, (core.T_OBJ1 + _temp_ch) ) & $ffff)
+    return (readreg( (core.T_OBJ1 + _temp_ch) ) & $ffff)
 
 
 PUB temp_word2deg(w): d
@@ -146,17 +146,10 @@ PUB temp_word2deg(w): d
             return FALSE
 
 
-PRI readreg(region, reg_nr): v | cmd_pkt, rd, tmp[2]
+PRI readreg(reg_nr): v | cmd_pkt, rd, tmp[2]
 ' Read word(s) from device into p_buff
-    case region
-        core.CMD_RAM:
-        core.CMD_EEPROM:
-        core.CMD_READFLAGS:
-        other:
-            return
-
     cmd_pkt.byte[0] := SLAVE_WR
-    cmd_pkt.byte[1] := region | reg_nr
+    cmd_pkt.byte[1] := reg_nr
 
     rd := 0
     i2c.start()
@@ -183,12 +176,12 @@ PRI readreg(region, reg_nr): v | cmd_pkt, rd, tmp[2]
         return -1                               ' error: bad CRC
 
 
-PRI writereg(reg_nr, val) | cmd_pkt[2]
+PRI write_eeprom(reg_nr, val) | cmd_pkt[2]
 ' Write value to sensor EEPROM
 '   reg_nr: sensor EEPROM register/address
 '   val:    value to write
     cmd_pkt.byte[0] := SLAVE_WR
-    cmd_pkt.byte[1] := core.CMD_EEPROM|reg_nr
+    cmd_pkt.byte[1] := reg_nr
     cmd_pkt.byte[2] := 0
     cmd_pkt.byte[3] := 0
     cmd_pkt.byte[4] := crc.crc8(@cmd_pkt, 4, ...' check the previous four bytes

@@ -4,7 +4,7 @@
     Description:    MLX90614-specific constants
     Author:         Jesse Burt
     Started:        Mar 17, 2019
-    Updated:        Jan 31, 2025
+    Updated:        Feb 1, 2025
     Copyright (c) 2024 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -35,11 +35,11 @@ CON
         EE_DEAD             = 5
         INIT                = 4
 
-    EE_TO_MAX               = $00
+    EE_TO_MAX               = CMD_EEPROM | $00
 
-    EE_TO_MIN               = $01
+    EE_TO_MIN               = CMD_EEPROM | $01
 
-    EE_PWMCTRL              = $02
+    EE_PWMCTRL              = CMD_EEPROM | $02
         PWM_PERIOD          = 9
         PWM_REPNUM          = 4
         TRPWMB              = 3
@@ -49,11 +49,11 @@ CON
         PWM_PERIOD_BITS     = %1111111
         PWM_REPNUM_BITS     = %11111
 
-    EE_TA_RANGE             = $03
+    EE_TA_RANGE             = CMD_EEPROM | $03
 
-    EE_EMISS_CORR           = $04
+    EE_EMISS_CORR           = CMD_EEPROM | $04
 
-    EE_CFG                  = $05
+    EE_CFG                  = CMD_EEPROM | $05
     EE_CFG_MASK             = $FFFF
     EE_CFG_RECOMMEND_MASK   = $8777 ' Help keep from altering bits 14..11, 7, 3, per Melexis Datasheet
         SENSOR_TST          = 15
@@ -79,19 +79,19 @@ CON
         REPEAT_SENS_TST_MASK= (1 << REPEAT_SENS_TST) ^ EE_CFG_MASK
         IIR_MASK            = IIR_BITS ^ EE_CFG_MASK
 
-    EE_MLX_SLAVEADDR        = $0E
+    EE_MLX_SLAVEADDR        = CMD_EEPROM | $0E
 
-    EE_ID_1                 = $1C
-    EE_ID_2                 = $1D
-    EE_ID_3                 = $1E
-    EE_ID_4                 = $1F
+    EE_ID_1                 = CMD_EEPROM | $1C
+    EE_ID_2                 = CMD_EEPROM | $1D
+    EE_ID_3                 = CMD_EEPROM | $1E
+    EE_ID_4                 = CMD_EEPROM | $1F
 
 '   RAM
-    IR_CH_1                 = $03
-    IR_CH_2                 = $05
-    T_A                     = $06
-    T_OBJ1                  = $07
-    T_OBJ2                  = $08
+    IR_CH_1                 = CMD_RAM | $03
+    IR_CH_2                 = CMD_RAM | $05
+    T_A                     = CMD_RAM | $06
+    T_OBJ1                  = CMD_RAM | $07
+    T_OBJ2                  = CMD_RAM | $08
 
 
 PUB null()
