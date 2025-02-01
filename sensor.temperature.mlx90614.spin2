@@ -4,7 +4,7 @@
     Description:    Driver for the Melexis MLX90614 IR thermometer
     Author:         Jesse Burt
     Started:        Mar 17, 2019
-    Updated:        Jan 31, 2025
+    Updated:        Feb 1, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -73,41 +73,39 @@ PUB stop()
     _temp_ch := 0
 
 
-PUB amb_temp_data(): temp_adc
+PUB amb_temp_data(): a
 ' Read ambient temperature ADC data
 '   Returns: s16
-    temp_adc := 0
-    readreg(core.CMD_RAM, core.T_A, 2, @temp_adc)
+    return readreg(core.CMD_RAM, core.T_A)
 
 
-PUB amb_temp(): temp
+PUB amb_temp(): t
 ' Reads the Ambient temperature
 '   Returns: Temperature in hundredths of a degree (e.g., 2135 is 21.35 deg),
 '       using the chosen scale
-    return temp_word2deg(amb_temp_data())
+    return temp_word2deg( amb_temp_data() )
 
 
 PUB dev_id(): id
 ' Reads the sensor ID
-    id := 0
-    readreg(core.CMD_EEPROM, core.EE_MLX_SLAVEADDR, 1, @id)
 
-    return (id & $ff)                           ' might be garbage in EE high byte; discard it
+    ' the high byte at this EE address might contain garbage so discard it; we only want the
+    '   lower byte
+    return ( readreg(core.CMD_EEPROM, core.EE_MLX_SLAVEADDR) & $ff )
 
 
 PUB rd_eeprom(p_buff) | r
 ' Dump EEPROM to array at p_buff
-'   NOTE: p_buff must be at least 64 bytes
-'    readreg(core.CMD_EEPROM, $00, 64, p_buff)
+'   NOTE: p_buff must be at least 32 words
     repeat r from $00 to $1f
-        readreg(core.CMD_EEPROM, r, 2, p_buff+(r*2) )
+        word[p_buff][r] := readreg(core.CMD_EEPROM, r)
 
 
 PUB serial_num(p_sn) | n
 ' Read serial number from sensor
 '   p_sn:   pointer to buffer to copy serial number to (must be at least 4 words in size)
     repeat n from 0 to 3
-        readreg(core.CMD_EEPROM, core.EE_ID_1+n, 1, p_sn+n)
+        word[p_sn][n] := readreg(core.CMD_EEPROM, core.EE_ID_1+n)
 
 
 PUB set_temp_channel(ch)
@@ -121,30 +119,28 @@ PUB temp_channel(): curr_ch
     return (_temp_ch + 1)
 
 
-PUB temp_data(): temp_word
+PUB temp_data(): w
 ' Read object temperature ADC word
 '   Returns: s16
-    temp_word := 0
-    readreg(core.CMD_RAM, (core.T_OBJ1 + _temp_ch), 2, @temp_word)
-    return (temp_word & $ffff)
+    return (readreg(core.CMD_RAM, (core.T_OBJ1 + _temp_ch) ) & $ffff)
 
 
-PUB temp_word2deg(temp_word): temp
+PUB temp_word2deg(w): d
 ' Convert temperature ADC word to temperature
 '   Returns: temperature, in hundredths of a degree, in chosen scale
-    temp_word *= 2
+    w *= 2
     case _temp_scale
         C:
-            return temp_word - 273_15
+            return w - 273_15
         F:
-            return (((temp_word - 273_15) * 9_00) / 5_00) + 32_00
+            return (((w - 273_15) * 9_00) / 5_00) + 32_00
         K:
             return
         other:
             return FALSE
 
 
-PRI readreg(region, reg_nr, len, p_buff) | cmd_pkt, rd, tmp[2]
+PRI readreg(region, reg_nr): v | cmd_pkt, rd, tmp[2]
 ' Read word(s) from device into p_buff
     case region
         core.CMD_RAM:
@@ -171,12 +167,14 @@ PRI readreg(region, reg_nr, len, p_buff) | cmd_pkt, rd, tmp[2]
     tmp.byte[3] := rd.byte[0]
     tmp.byte[4] := rd.byte[1]
 
-    ' compare it to our own check and if it matches, copy the data to the destination
+    ' compare it to our own check and if it matches, return the data
     if ( crc.crc8(  @tmp, 5, ...
                     $00, $00, ...               ' initial value = $00, xor final CRC with $00
                     crc.POLY8_MELEXIS, ...
                     0, 0 ) == rd.byte[2])       ' input, output reflect = false
-        bytemove(p_buff, @rd, 2)
+        return rd.word[0]
+    else
+        return -1                               ' error: bad CRC
 
 
 PRI writereg(reg_nr, val) | cmd_pkt[2]
