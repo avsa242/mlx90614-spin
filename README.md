@@ -14,6 +14,7 @@ This is a P8X32A/Propeller 1, P2X8C4M64P/Propeller 2 driver object for the Melex
 * Returns temperature in centi-degrees (hundredths) Kelvin, Celsius or Fahrenheit
 * Change sensor's slave address in EEPROM
 * Set on-sensor FIR filter sample count, IIR filter percentage
+* Set sensor gain
 
 
 ## Requirements
