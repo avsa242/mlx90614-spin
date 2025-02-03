@@ -4,7 +4,7 @@
     Description:    Driver for the Melexis MLX90614 IR thermometer
     Author:         Jesse Burt
     Started:        Mar 17, 2019
-    Updated:        Feb 1, 2025
+    Updated:        Feb 3, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -94,6 +94,21 @@ PUB dev_id(): id
     ' the high byte at this EE address might contain garbage so discard it; we only want the
     '   lower byte
     return (id & $ff)
+
+
+PUB fir_filter_samples(s=-2): c
+' Set the number of samples used by the on-chip FIR filter
+'   s:  8, 16, 32, 64, 128, 256, 512, 1024
+'   NOTE: Values below 128 are not recommended
+    c := readreg(core.EE_CFG)
+    case s
+        8, 16, 32, 64, 128, 256, 512, 1024:
+            s := lookdownz(s: 8, 16, 32, 64, 128, 256, 512, 1024)
+            s := (c & core.FIR_MASK) | (s << core.FIR)
+            write_eeprom(core.EE_CFG, s)
+        other:
+            c := ((c >> core.FIR) & core.FIR_BITS)
+            return lookupz(c: 8, 16, 32, 64, 128, 256, 512, 1024)
 
 
 PUB rd_eeprom(p_buff): s | r, word tmp[32]
