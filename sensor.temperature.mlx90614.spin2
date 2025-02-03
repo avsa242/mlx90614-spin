@@ -111,6 +111,20 @@ PUB fir_filter_samples(s=-2): c
             return lookupz(c: 8, 16, 32, 64, 128, 256, 512, 1024)
 
 
+PUB iir_filter_strength(s=-2): c
+' Set strength of the on-chip IIR filter
+'   (limit spikes/pulses of temperature changes to a percentage of the sensed temperature)
+'   s:  13, 17, 25, 50, 57, 67, 80, 100 (percent)
+'   NOTE: Values below 128 are not recommended
+    c := readreg(core.EE_CFG)
+    case s
+        13, 17, 25, 50, 57, 67, 80, 100:
+            s := (c & core.IIR_MASK) | lookdownz(s: 50, 25, 17, 13, 100, 80, 67, 57)
+            write_eeprom(core.EE_CFG, s)
+        other:
+            return lookupz( (c & core.IIR_BITS): 50, 25, 17, 13, 100, 80, 67, 57)
+
+
 PUB rd_eeprom(p_buff): s | r, word tmp[32]
 ' Dump EEPROM to array at p_buff
 '   NOTE: p_buff must be at least 32 words
